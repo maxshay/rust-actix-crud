@@ -18,8 +18,8 @@ async fn create(
     payload: web::Json<TweetPayload>,
 ) -> Result<HttpResponse, Error> {
     let tweet = web::block(move || {
-        let conn = pool.get()?;
-        add_a_tweet(&payload.message, &conn)
+        let mut conn = pool.get()?;
+        add_a_tweet(&payload.message, &mut conn)
     })
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
@@ -42,7 +42,7 @@ async fn destroy(id: web::Path<String>) -> impl Responder {
     HttpResponse::Ok().body(format!("Tweet#delete {}", id))
 }
 
-fn add_a_tweet(_message: &str, conn: &PgConnection) -> Result<Tweet, DbError> {
+fn add_a_tweet(_message: &str, conn: &mut PgConnection) -> Result<Tweet, DbError> {
     use crate::schema::tweets::dsl::*;
 
     let new_tweet = NewTweet {
