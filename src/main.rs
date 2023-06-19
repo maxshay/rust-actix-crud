@@ -17,6 +17,7 @@ async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
 
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    let port = std::env::var("PORT").expect("$PORT is not set.");
 
     // set up database connection pool
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL");
@@ -37,7 +38,7 @@ async fn main() -> std::io::Result<()> {
             .service(handlers::update)
             .service(handlers::destroy)
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(("localhost", port.parse().unwrap()))?
     .run()
     .await
 }
