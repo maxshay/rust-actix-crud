@@ -12,6 +12,9 @@ mod schema;
 
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
+// https://yakshav.es/using-diesel-with-a-postgres-schema/
+// https://app.planetscale.com/maksimshaynyuk/general-postgres/main
+
 #[actix_web::main] // or #[tokio::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();

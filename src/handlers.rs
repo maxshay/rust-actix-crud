@@ -72,3 +72,5 @@ async fn destroy(id: web::Path<i32>, pool: web::Data<DbPool>) -> Result<HttpResp
 
     Ok(result)
 }
+
+// https://framagit.org/mohsen/rust_crud_rest_api/-/blob/master/tests/user_controller_test.rs
