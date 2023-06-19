@@ -1,15 +1,20 @@
 use super::DbPool;
 
-use actix_web::{delete, get, post, put, web, Error, HttpResponse, Responder};
-use diesel::prelude::*;
+use actix_web::{delete, get, post, put, web, Error, HttpResponse};
 
-use crate::models::{NewTweet, Tweet, TweetPayload};
-
-type DbError = Box<dyn std::error::Error + Send + Sync>;
+use crate::models::TweetPayload;
+use crate::ops::{add_a_tweet, delete_tweet, find_all, find_by_id, update_tweet};
 
 #[get("/tweets")]
-async fn index() -> impl Responder {
-    HttpResponse::Ok().body("Tweet#index")
+async fn index(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+    let tweets = web::block(move || {
+        let mut conn = pool.get()?;
+        find_all(&mut conn)
+    })
+    .await?
+    .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(tweets))
 }
 
 #[post("/tweets")]
@@ -28,30 +33,42 @@ async fn create(
 }
 
 #[get("/tweets/{id}")]
-async fn show(id: web::Path<String>) -> impl Responder {
-    HttpResponse::Ok().body(format!("Tweet#show {}", id))
+async fn show(id: web::Path<i32>, pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+    let tweet = web::block(move || {
+        let mut conn = pool.get()?;
+        find_by_id(id.into_inner(), &mut conn)
+    })
+    .await?
+    .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(tweet))
 }
 
 #[put("/tweets/{id}")]
-async fn update(id: web::Path<String>) -> impl Responder {
-    HttpResponse::Ok().body(format!("Tweet#edit {}", id))
+async fn update(
+    id: web::Path<i32>,
+    payload: web::Json<TweetPayload>,
+    pool: web::Data<DbPool>,
+) -> Result<HttpResponse, Error> {
+    let tweet = web::block(move || {
+        let mut conn = pool.get()?;
+        update_tweet(id.into_inner(), payload.message.clone(), &mut conn)
+    })
+    .await?
+    .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(tweet))
 }
 
 #[delete("/tweets/{id}")]
-async fn destroy(id: web::Path<String>) -> impl Responder {
-    HttpResponse::Ok().body(format!("Tweet#delete {}", id))
-}
+async fn destroy(id: web::Path<i32>, pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+    let result = web::block(move || {
+        let mut conn = pool.get()?;
+        delete_tweet(id.into_inner(), &mut conn)
+    })
+    .await?
+    .map(|tweet| HttpResponse::Ok().json(tweet))
+    .map_err(actix_web::error::ErrorInternalServerError)?;
 
-fn add_a_tweet(_message: &str, conn: &mut PgConnection) -> Result<Tweet, DbError> {
-    use crate::schema::tweets::dsl::*;
-
-    let new_tweet = NewTweet {
-        message: _message,
-        created_at: chrono::Local::now().naive_local(),
-    };
-
-    let res = diesel::insert_into(tweets)
-        .values(&new_tweet)
-        .get_result(conn)?;
-    Ok(res)
+    Ok(result)
 }

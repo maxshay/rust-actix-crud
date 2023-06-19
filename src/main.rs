@@ -7,6 +7,7 @@ use diesel::r2d2::{self, ConnectionManager};
 
 mod handlers;
 mod models;
+mod ops;
 mod schema;
 
 pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
