@@ -1,17 +1,19 @@
-version: '3.8'
+version: "3.8"
 
 name: "rust-actix-group"
 
 services:
   postgres:
+    deploy:
+      restart_policy:
+        condition: none
     image: postgres:15.3-alpine3.18
     container_name: docker_pg
-    restart: always
     environment:
       POSTGRES_USER: actix
       POSTGRES_PASSWORD: actix
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - db:/var/lib/postgresql/data
 
