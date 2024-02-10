@@ -19,6 +19,9 @@ pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
 
+    std::env::set_var("RUST_LOG", "info");
+    std::env::set_var("RUST_BACKTRACE", "1");
+
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     let port = std::env::var("PORT").expect("$PORT is not set.");
 
@@ -26,9 +29,7 @@ async fn main() -> std::io::Result<()> {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL");
     let manager: ConnectionManager<PgConnection> =
         ConnectionManager::<PgConnection>::new(database_url);
-    let pool: DbPool = r2d2::Pool::builder()
-        .build(manager)
-        .expect("Failed to create pool.");
+    let pool: DbPool = r2d2::Pool::builder().build(manager).unwrap();
 
     HttpServer::new(move || {
         App::new()
